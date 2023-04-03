@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "time": 0.10651000000000003,
+  "mopsa_version": "1.0~pre2",
+  "mopsa_dev_version": "release",
+  "files": [ "hello.c" ],
+  "checks": [
+    {
+      "kind": "warning",
+      "title": "Invalid memory access",
+      "messages":
+        "accessing 4 bytes at offsets [4,400] of variable 'a' of size 400 bytes",
+      "range": {
+        "start": { "file": "hello.c", "line": 5, "column": 4 },
+        "end": { "file": "hello.c", "line": 5, "column": 8 }
+      },
+      "callstacks": [
+        [
+          {
+            "function": "main",
+            "range": {
+              "start": { "file": "hello.c", "line": 2, "column": 4 },
+              "end": { "file": "hello.c", "line": 2, "column": 8 }
+            }
+          }
+        ]
+      ]
+    }
+  ],
+  "assumptions": []
+}

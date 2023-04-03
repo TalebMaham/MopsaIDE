@@ -35,5 +35,13 @@ public class Test1 {
 	    assertEquals(expectedSource, actualSource);
 	}
 
+	@Test
+	public void testJSON() {
+	    MopsaServerAnalysis server = new MopsaServerAnalysis();
+	    String expectedSource = "mopsa";
+	    String actualSource = server.source();
+	    assertEquals(expectedSource, actualSource);
+	}
+
 
 }
