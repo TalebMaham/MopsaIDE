@@ -126,7 +126,7 @@ public class MopsaServerAnalysis implements ToolAnalysis {
 	public String source() {
 		return "mopsa";
 	}
-/*
+
 	  @Override
 	  public void analyze(
 	      Collection<? extends Module> files, AnalysisConsumer consumer, boolean rerun) {
@@ -181,18 +181,14 @@ public class MopsaServerAnalysis implements ToolAnalysis {
 	            });
 	      }
 	    }
-
+/*
 	public String[] getCommand() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	public Collection<AnalysisResult> convertToolOutput() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-    
 */
+
 
 	public void analyze(Collection<? extends Module> files, AnalysisConsumer server, boolean rerun) {
 		// TODO Auto-generated method stub

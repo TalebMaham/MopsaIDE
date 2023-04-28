@@ -71,7 +71,7 @@ public class MopsaIDE {
 
 	      System.exit(1);
 	    }
-	 /*   Supplier<MagpieServer> createServer =
+	    Supplier<MagpieServer> createServer =
 	         () -> {
 	          boolean auto = false;
 	          int timeout = 5;
@@ -109,6 +109,6 @@ public class MopsaIDE {
 	      MagpieServer.launchOnSocketPort(port, createServer);
 	    } else {
 	      createServer.get().launchOnStdio();
-	    }*/
+	    }
 	  }
 }
