@@ -40,7 +40,7 @@ public class MopsaIDE {
                 "dockerImage",
                 true,
                 MessageFormat.format(
-                    "dockerImage to use when running infer in docker\ndefault is `{0}`",
+                    "dockerImage to use when running mopsa in docker\ndefault is `{0}`",
                     DEFAULT_DOCKER_IMAGE))
             .addOption(
                 "s",
