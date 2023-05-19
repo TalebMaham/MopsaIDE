@@ -1,6 +1,6 @@
 # MopsaIDE :
 
-<h3 style="color:red">Introduction</h3>
+<h3 style="color:red">Resumé : </h3>
 <p>
 Le projet que nous avons réalisé dans le cadre du module PSTL de M1 STL à Sorbonne Université consiste à implémenter un outil d'analyse statique pour les programmes écrits en langages C et Python. Cet outil, appelé Mopsa, permet de détecter les erreurs potentielles dans le code avant l'exécution, ce qui peut contribuer à améliorer la qualité du logiciel. Cependant, jusqu'à présent, Mopsa ne pouvait être exécuté que dans un terminal, ce qui limitait son utilisation pratique.
 
