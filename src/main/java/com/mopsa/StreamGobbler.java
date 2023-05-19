@@ -9,30 +9,30 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class StreamGobbler extends Thread {
-	  private InputStream in;
-	  private List<String> output = new ArrayList();
-	  private Consumer<IOException> errorHandler;
+  private InputStream in;
+  private List<String> output = new ArrayList();
+  private Consumer<IOException> errorHandler;
 
-	  public StreamGobbler(InputStream in, Consumer<IOException> errorHandler) {
-	    this.in = in;
-	    this.errorHandler = errorHandler;
-	  }
+  public StreamGobbler(InputStream in, Consumer<IOException> errorHandler) {
+    this.in = in;
+    this.errorHandler = errorHandler;
+  }
 
-	  @Override
-	  public void run() {
-	    try {
-	      InputStreamReader isr = new InputStreamReader(in);
-	      BufferedReader br = new BufferedReader(isr);
-	      String line = null;
-	      while ((line = br.readLine()) != null) {
-	        output.add(line);
-	      }
-	    } catch (IOException e) {
-	      errorHandler.accept(e);
-	    }
-	  }
+  @Override
+  public void run() {
+    try {
+      InputStreamReader isr = new InputStreamReader(in);
+      BufferedReader br = new BufferedReader(isr);
+      String line = null;
+      while ((line = br.readLine()) != null) {
+        output.add(line);
+      }
+    } catch (IOException e) {
+      errorHandler.accept(e);
+    }
+  }
 
-	  public List<String> getOutput() {
-	    return output;
-	  }
-	}
+  public List<String> getOutput() {
+    return output;
+  }
+}
