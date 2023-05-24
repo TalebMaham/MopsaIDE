@@ -62,7 +62,7 @@ public class MopsaIDE {
 	    cliOptions.addOption("a", "auto", true,
 	            MessageFormat.format("enables auto mode and sets the timeout in minutes for starting the automatic tool analysis\n default timeout is {0}", DEFAULT_TIMEOUT));
 	    cliOptions.addOption("i", "dockerImage", true,
-	            MessageFormat.format("dockerImage to use when running infer in docker\ndefault is `{0}`", DEFAULT_DOCKER_IMAGE));
+	            MessageFormat.format("dockerImage to use when running mopsa in docker\ndefault is `{0}`", DEFAULT_DOCKER_IMAGE));
 	    cliOptions.addOption("s", "socket", false,
 	            MessageFormat.format("run in socket mode, standard port is {0}", DEFAULT_PORT));
 	    cliOptions.addOption("p", "port", true,
