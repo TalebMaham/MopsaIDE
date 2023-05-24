@@ -58,17 +58,18 @@ public class MopsaIDE {
 	}
 
 	private static Options createCLIOptions() {
-	    Options cliOptions = new Options();
-	    cliOptions.addOption("a", "auto", true,
-	            MessageFormat.format("enables auto mode and sets the timeout in minutes for starting the automatic tool analysis\n default timeout is {0}", DEFAULT_TIMEOUT));
-	    cliOptions.addOption("i", "dockerImage", true,
-	            MessageFormat.format("dockerImage to use when running mopsa in docker\ndefault is `{0}`", DEFAULT_DOCKER_IMAGE));
-	    cliOptions.addOption("s", "socket", false,
-	            MessageFormat.format("run in socket mode, standard port is {0}", DEFAULT_PORT));
-	    cliOptions.addOption("p", "port", true,
-	            MessageFormat.format("sets the port for socket mode, standard port is {0}", DEFAULT_PORT));
-	    return cliOptions;
-	}
+    Options cliOptions = new Options();
+    cliOptions.addOption("a", "auto", true,
+            MessageFormat.format("active le mode automatique et définit le délai d'attente en minutes pour démarrer l'analyse automatique des outils\n le délai d'attente par défaut est {0}", DEFAULT_TIMEOUT));
+    cliOptions.addOption("i", "dockerImage", true,
+            MessageFormat.format("image Docker à utiliser lors de l'exécution de mopsa en Docker\n par défaut : `{0}`", DEFAULT_DOCKER_IMAGE));
+    cliOptions.addOption("s", "socket", false,
+            MessageFormat.format("exécute en mode socket, le port standard est {0}", DEFAULT_PORT));
+    cliOptions.addOption("p", "port", true,
+            MessageFormat.format("définit le port pour le mode socket, le port standard est {0}", DEFAULT_PORT));
+    return cliOptions;
+}
+
 
 	private static Supplier<MagpieServer> createServerSupplier(CommandLine cmd) {
 	    return () -> {
