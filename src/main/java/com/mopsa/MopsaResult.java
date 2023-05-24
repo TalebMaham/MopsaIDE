@@ -8,33 +8,33 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 
 public class MopsaResult implements AnalysisResult {
 
-  private final Kind kind;
+private final Kind type;
   private final Position position;
   private final String message;
-  private final Iterable<Pair<Position, String>> related;
-  private final DiagnosticSeverity severity;
-  private final Pair<Position, String> repair;
+  private final Iterable<Pair<Position, String>> informationsConnexes;
+  private final DiagnosticSeverity gravite;
+  private final Pair<Position, String> reparation;
   private final String code;
 
   public MopsaResult(
-      Kind kind,
-      Position pos,
-      String msg,
-      Iterable<Pair<Position, String>> relatedInfo,
-      DiagnosticSeverity severity,
-      Pair<Position, String> repair,
+      Kind type,
+      Position position,
+      String message,
+      Iterable<Pair<Position, String>> informationsConnexes,
+      DiagnosticSeverity gravite,
+      Pair<Position, String> reparation,
       String code) {
-    this.kind = kind;
-    this.position = pos;
-    this.message = msg;
-    this.related = relatedInfo;
-    this.severity = severity;
-    this.repair = repair;
+    this.type = type;
+    this.position = position;
+    this.message = message;
+    this.informationsConnexes = informationsConnexes;
+    this.gravite = gravite;
+    this.reparation = reparation;
     this.code = code;
   }
 
   public Kind kind() {
-    return this.kind;
+    return this.type;
   }
 
   public Position position() {
@@ -42,15 +42,15 @@ public class MopsaResult implements AnalysisResult {
   }
 
   public Iterable<Pair<Position, String>> related() {
-    return related;
+    return informationsConnexes;
   }
 
   public DiagnosticSeverity severity() {
-    return severity;
+    return gravite;
   }
 
   public Pair<Position, String> repair() {
-    return repair;
+    return reparation;
   }
 
   public String toString(boolean useMarkdown) {
@@ -60,7 +60,7 @@ public class MopsaResult implements AnalysisResult {
   @Override
   public String toString() {
     return "DataFlowResult [kind="
-        + kind
+        + type
         + ", position="
         + position
         + ", code="
@@ -68,15 +68,16 @@ public class MopsaResult implements AnalysisResult {
         + ", message="
         + message
         + ", related="
-        + related
+        + informationsConnexes
         + ", severity="
-        + severity
+        + gravite
         + ", repair="
-        + repair
+        + reparation
         + "]";
   }
 
   public String code() {
     return code;
   }
+
 }
