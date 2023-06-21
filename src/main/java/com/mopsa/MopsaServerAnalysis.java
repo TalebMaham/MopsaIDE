@@ -2,37 +2,32 @@ package com.mopsa;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
 import com.ibm.wala.classLoader.Module;
 import com.ibm.wala.util.collections.Pair;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Stream;
 import magpiebridge.core.AnalysisConsumer;
 import magpiebridge.core.AnalysisResult;
+import magpiebridge.core.Kind;
 import magpiebridge.core.MagpieServer;
 import magpiebridge.core.ToolAnalysis;
-import magpiebridge.core.analysis.configuration.ConfigurationAction;
-import magpiebridge.core.analysis.configuration.ConfigurationOption;
-import magpiebridge.core.analysis.configuration.OptionType;
 import magpiebridge.projectservice.java.JavaProjectService;
-import magpiebridge.projectservice.java.JavaProjectType;
-import magpiebridge.util.SourceCodePositionFinder;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
@@ -124,17 +119,15 @@ public class MopsaServerAnalysis implements ToolAnalysis {
         JavaProjectService ps = (JavaProjectService) server.getProjectService("java").get();
         if (ps.getRootPath().isPresent()) {
           this.rootPath = ps.getRootPath().get().toString();
-          this.reportPath = Paths.get(this.rootPath, "mopsa-out", "report.json").toString();
+          this.reportPath = Paths.get(this.rootPath, "analyse.json").toString();
           this.projectType = ps.getProjectType();
-          this.defaultCommand = getDefaultCommand();
-          checkMopsaInstallation(server);
+          // checkMopsaInstallation(server);
           // show results of previous run
           File file = new File(MopsaServerAnalysis.this.reportPath);
 
-          if (true) {
+          if (file.exists()) {
             Collection<AnalysisResult> results = convertToolOutput();
-            server.forwardMessageToClient(
-                new MessageParams(MessageType.Info, "le contenu des results: " + results));
+            System.out.println("Resultat reçu : " + results);
             if (!results.isEmpty()) server.consume(results, source());
           }
         }
@@ -143,130 +136,101 @@ public class MopsaServerAnalysis implements ToolAnalysis {
       if (rerun && this.rootPath != null) {
         server.submittNewTask(
             () -> {
-              try {
-                File report = new File(MopsaServerAnalysis.this.reportPath);
-                if (report.exists()) report.delete();
-                Process runInfer = this.runCommand(new File(MopsaServerAnalysis.this.rootPath));
-                StreamGobbler stdOut =
-                    new StreamGobbler(runInfer.getInputStream(), e -> handleError(server, e));
-                StreamGobbler stdErr =
-                    new StreamGobbler(runInfer.getErrorStream(), e -> handleError(server, e));
-                stdOut.start();
-                stdErr.start();
-                if (runInfer.waitFor() == 0) {
-                  File file = new File(MopsaServerAnalysis.this.reportPath);
-                  if (true) {
-                    Collection<AnalysisResult> results = convertToolOutput();
-                    server.consume(results, source());
-                  }
+              File report = new File(MopsaServerAnalysis.this.reportPath);
+              // if (report.exists()) report.delete();
+              System.out.println(
+                  "Avant de lancer la commande reportpath == : "
+                      + MopsaServerAnalysis.this.reportPath);
+              System.out.println(
+                  "Avant de lancer la commande rootpath == : " + MopsaServerAnalysis.this.rootPath);
+
+              // Process runMopsa = this.runCommand(new File(MopsaServerAnalysis.this.rootPath));
+
+              if (true) {
+                File file = new File(MopsaServerAnalysis.this.reportPath);
+                if (file.exists()) {
+                  Collection<AnalysisResult> results = convertToolOutput();
+                  System.out.println("envoie du results" + results);
+                  server.consume(results, source());
                 } else {
-                  server.forwardMessageToClient(
-                      new MessageParams(MessageType.Error, String.join("\n", stdErr.getOutput())));
+                  System.out.println("Erreur le file n'existe pas : ");
                 }
-              } catch (InterruptedException e) {
-                handleError(server, e);
-              } catch (IOException e) {
-                handleError(server, e);
+              } else {
+                // System.out.println("Erreur : " + runMopsa.waitFor());
+
               }
             });
       }
     }
   }
-  /*
-  	public String[] getCommand() {
-  		// TODO Auto-generated method stub
-  		return null;
-  	}
-
-  */
-
-  private String getDefaultCommand() {
-    return "./commande.sh";
-  }
 
   @Override
   public String[] getCommand() {
-
-    String mopsaCommand = useDefaultCommand ? defaultCommand : userDefinedCommand;
-
-    String buildCmd = null;
-    if (firstTime) {
-      firstTime = false;
-      buildCmd = getToolBuildCmdWithClean();
-    } else {
-      buildCmd = getToolBuildCmd();
-    }
-    if (buildCmd == null) mopsaCommand = "mopsa-c";
-    else {
-      mopsaCommand = MessageFormat.format(mopsaCommand, buildCmd);
-    }
-
-    server.forwardMessageToClient(
-        new MessageParams(MessageType.Info, "Running command: " + mopsaCommand));
-    return mopsaCommand.split(" ");
+    return new String[] {"mopsa-c mopsa.db -format=json >analyse.json "};
   }
 
   public Collection<AnalysisResult> convertToolOutput() {
     Collection<AnalysisResult> res = new ArrayList<AnalysisResult>();
     try {
-      JsonParser parser = new JsonParser();
-      String jsonString =
-          "{ \"success\": true, \"time\": 0.10651000000000003, \"mopsa_version\": \"1.0~pre2\", \"mopsa_dev_version\": \"release\", \"files\": [ \"hello.c\" ], \"checks\": [ { \"kind\": \"warning\", \"title\": \"Invalid memory access\", \"messages\": \"accessing 4 bytes at offsets [4,400] of variable 'a' of size 400 bytes\", \"range\": { \"start\": { \"file\": \"hello.c\", \"line\": 5, \"column\": 4 }, \"end\": { \"file\": \"hello.c\", \"line\": 5, \"column\": 8 } }, \"callstacks\": [ [ { \"function\": \"main\", \"range\": { \"start\": { \"file\": \"hello.c\", \"line\": 2, \"column\": 4 }, \"end\": { \"file\": \"hello.c\", \"line\": 2, \"column\": 8 } } } ] ] } ], \"assumptions\": [] }";
       Gson gson = new Gson();
-      JsonObject analyse = gson.fromJson(jsonString, JsonObject.class);
-      JsonArray bugs = analyse.getAsJsonArray("checks");
-      for (int i = 0; i < bugs.size(); i++) {
-        JsonObject bug = bugs.get(i).getAsJsonObject();
-        String bugType = bug.get("title").getAsString();
-        String qualifier = bug.get("messages").getAsString();
-        int line =
-            bug.get("range")
-                .getAsJsonObject()
-                .get("start")
-                .getAsJsonObject()
-                .get("line")
-                .getAsInt();
-        String file = "hello.c";
-        // Position pos = SourceCodePositionFinder.findCode(new File(file), line).toPosition();
-        String msg = bugType + ": " + qualifier;
-        JsonArray trace = bug.get("callstacks").getAsJsonArray();
+      JsonObject jsonObject =
+          gson.fromJson(new FileReader(new File(this.reportPath)), JsonObject.class);
+
+      JsonArray checks = jsonObject.getAsJsonArray("checks");
+      for (JsonElement checkElement : checks) {
+        JsonObject check = checkElement.getAsJsonObject();
+        String kind = check.get("kind").getAsString();
+        System.out.println("Kind: " + kind);
+        String title = check.get("title").getAsString();
+        System.out.println("Title: " + title);
+        String messages = check.get("messages").getAsString();
+        System.out.println("Messages: " + messages);
+
+        JsonObject range = check.getAsJsonObject("range");
+        JsonObject start = range.getAsJsonObject("start");
+        int line = start.get("line").getAsInt();
+        System.out.println("Line: " + line);
+        String file = start.get("file").getAsString();
+        System.out.println("File: " + file);
+
+        Position pos =
+            SourceCodePositionFinder.findCode(
+                    new File(MopsaServerAnalysis.this.rootPath + "/" + file), line)
+                .toPosition();
+        String msg = title + ": " + messages;
+        System.out.println("Valeurs de callstacks :");
+
+        System.out.println("Valeurs de callstacks :" + check.getAsJsonArray("callstacks"));
+        JsonArray callstacks = check.getAsJsonArray("callstacks");
         ArrayList<Pair<Position, String>> traceList = new ArrayList<Pair<Position, String>>();
         if (showTrace) {
-          for (int j = 0; j < trace.size(); j++) {
-            JsonObject step = trace.get(j).getAsJsonObject();
-            String stepFile = this.rootPath + File.separator + step.get("filename").getAsString();
-            if (new File(stepFile).exists()) {
-              int stepLine = step.get("line_number").getAsInt();
-              String stepDescription = step.get("description").getAsString();
-              Position stepPos =
-                  SourceCodePositionFinder.findCode(new File(stepFile), stepLine).toPosition();
-              Pair<Position, String> pair = Pair.make(stepPos, stepDescription);
-              traceList.add(pair);
+          for (JsonElement callstackElement : callstacks) {
+            JsonArray callstack = callstackElement.getAsJsonArray();
+            for (JsonElement stepElement : callstack) {
+              JsonObject step = stepElement.getAsJsonObject();
+              JsonObject stepRange = step.getAsJsonObject("range");
+              JsonObject stepStart = stepRange.getAsJsonObject("start");
+              int stepLine = stepStart.get("line").getAsInt();
+              String stepFile = stepStart.get("file").getAsString();
+              String stepFunction = step.get("function").getAsString();
+
+              if (new File(stepFile).exists()) {
+                Position stepPos =
+                    SourceCodePositionFinder.findCode(new File(stepFile), stepLine).toPosition();
+                Pair<Position, String> pair = Pair.make(stepPos, stepFunction);
+                traceList.add(pair);
+              }
             }
-            server.forwardMessageToClient(
-                new MessageParams(MessageType.Info, "Lancement convertToolOutPut ..."));
           }
         }
+
         AnalysisResult rbug =
             new MopsaResult(
-                magpiebridge.core.Kind.Diagnostic,
-                null,
-                msg,
-                traceList,
-                DiagnosticSeverity.Error,
-                null,
-                null);
+                Kind.Diagnostic, pos, msg, traceList, DiagnosticSeverity.Error, null, null);
         res.add(rbug);
-        /*  server.forwardMessageToClient(
-            new MessageParams(MessageType.Info, "La taille du res : " + res.size()));
-        server.forwardMessageToClient(
-            new MessageParams(MessageType.Info, "Le mes qui doit etre affiché   : " + msg));*/
       }
-
-    } catch (JsonIOException e) {
-      e.printStackTrace();
-    } catch (JsonSyntaxException e) {
-      e.printStackTrace();
+    } catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+      System.out.println("Wow3 : " + e);
     }
     return res;
   }
@@ -286,52 +250,5 @@ public class MopsaServerAnalysis implements ToolAnalysis {
     br.close();
 
     return jsonObject;
-  }
-
-  private void handleError(MagpieServer server, Exception e) {
-    handleError(server, e.getLocalizedMessage());
-  }
-
-  private void handleError(MagpieServer server, String message) {
-    server.forwardMessageToClient(new MessageParams(MessageType.Error, message));
-  }
-
-  private String getToolBuildCmdWithClean() {
-    if (JavaProjectType.Maven.toString().equals(this.projectType)) return "mvn clean compile";
-    if (JavaProjectType.Gradle.toString().equals(this.projectType)) return "./gradlew clean build";
-    return null;
-  }
-
-  private String getToolBuildCmd() {
-    if (this.projectType.equals(JavaProjectType.Maven.toString())) return "mvn compile";
-    if (this.projectType.equals(JavaProjectType.Gradle.toString())) return "./gradlew build";
-    return null;
-  }
-
-  @Override
-  public List<ConfigurationOption> getConfigurationOptions() {
-    List<ConfigurationOption> commands = new ArrayList<>();
-    ConfigurationOption defaultCommand =
-        new ConfigurationOption("run default command", OptionType.checkbox, "true");
-    ConfigurationOption command = new ConfigurationOption("run command: ", OptionType.text);
-    commands.add(defaultCommand);
-    commands.add(command);
-    return commands;
-  }
-
-  @Override
-  public List<ConfigurationAction> getConfiguredActions() {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public void configure(List<ConfigurationOption> configuration) {
-    for (ConfigurationOption o : configuration) {
-      if (o.getType().equals(OptionType.checkbox)) {
-        this.useDefaultCommand = o.getValueAsBoolean();
-      } else if (o.getType().equals(OptionType.text) && o.getValue() != null) {
-        this.userDefinedCommand = o.getValue();
-      }
-    }
   }
 }
