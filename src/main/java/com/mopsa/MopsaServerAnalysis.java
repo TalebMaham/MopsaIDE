@@ -19,9 +19,10 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.Scanner;
 import java.util.stream.Stream;
+import javax.swing.JCheckBox;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import magpiebridge.core.AnalysisConsumer;
 import magpiebridge.core.AnalysisResult;
 import magpiebridge.core.Kind;
@@ -67,36 +68,6 @@ public class MopsaServerAnalysis implements ToolAnalysis {
     return version;
   }
 
-  public String getJSONAnalyseC(String fichier) {
-    List<String> command = new ArrayList<String>();
-    command.add("mopsa-c");
-    command.add("-format=json");
-    command.add("hello.c");
-    command.add(">analyse.json");
-    String jsonanalyse = "";
-    try {
-      Process mopsaVersionProcess = new ProcessBuilder(command).start();
-      int exitCode = mopsaVersionProcess.waitFor();
-
-      if (exitCode == 0) {
-        InputStream is = mopsaVersionProcess.getInputStream();
-        Scanner scanner = new Scanner(is).useDelimiter("\\A");
-        jsonanalyse = scanner.hasNext() ? scanner.next() : "";
-      } else {
-        InputStream err = mopsaVersionProcess.getErrorStream();
-        Scanner scanner = new Scanner(err).useDelimiter("\\A");
-        String errorMessage = scanner.hasNext() ? scanner.next() : "";
-        System.out.println("Il y a une erreur : " + mopsaVersionProcess.toString());
-        return errorMessage;
-      }
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return jsonanalyse;
-  }
-
   public void printMopsaVersion(String version) {
     System.out.println("Mopsa version: " + version);
   }
@@ -120,14 +91,13 @@ public class MopsaServerAnalysis implements ToolAnalysis {
         if (ps.getRootPath().isPresent()) {
           this.rootPath = ps.getRootPath().get().toString();
           this.reportPath = Paths.get(this.rootPath, "analyse.json").toString();
-          this.projectType = ps.getProjectType();
-          // checkMopsaInstallation(server);
+
+          checkMopsaInstallation(server);
           // show results of previous run
           File file = new File(MopsaServerAnalysis.this.reportPath);
 
           if (file.exists()) {
             Collection<AnalysisResult> results = convertToolOutput();
-            System.out.println("Resultat reçu : " + results);
             if (!results.isEmpty()) server.consume(results, source());
           }
         }
@@ -144,20 +114,28 @@ public class MopsaServerAnalysis implements ToolAnalysis {
               System.out.println(
                   "Avant de lancer la commande rootpath == : " + MopsaServerAnalysis.this.rootPath);
 
-              // Process runMopsa = this.runCommand(new File(MopsaServerAnalysis.this.rootPath));
+              try {
+                Process runMopsa = this.runCommand(new File(MopsaServerAnalysis.this.rootPath));
 
-              if (true) {
-                File file = new File(MopsaServerAnalysis.this.reportPath);
-                if (file.exists()) {
-                  Collection<AnalysisResult> results = convertToolOutput();
-                  System.out.println("envoie du results" + results);
-                  server.consume(results, source());
+                if (runMopsa.waitFor() != 2) {
+                  File file = new File(MopsaServerAnalysis.this.reportPath);
+                  if (file.exists()) {
+                    Collection<AnalysisResult> results = convertToolOutput();
+                    System.out.println("envoie du results" + results);
+                    server.consume(results, source());
+                  } else {
+                    System.out.println("Erreur le file n'existe pas : ");
+                  }
                 } else {
-                  System.out.println("Erreur le file n'existe pas : ");
-                }
-              } else {
-                // System.out.println("Erreur : " + runMopsa.waitFor());
+                  // System.out.println("Erreur : " + runMopsa.waitFor());
 
+                }
+              } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+              } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
               }
             });
       }
@@ -166,7 +144,31 @@ public class MopsaServerAnalysis implements ToolAnalysis {
 
   @Override
   public String[] getCommand() {
-    return new String[] {"mopsa-c mopsa.db -format=json >analyse.json "};
+    // Poser les questions avec des cases à cocher
+    JPanel panel = new JPanel();
+    JCheckBox cCheckbox = new JCheckBox("C");
+    JCheckBox pythonCheckbox = new JCheckBox("Python");
+    panel.add(cCheckbox);
+    panel.add(pythonCheckbox);
+    JOptionPane.showOptionDialog(
+        null,
+        panel,
+        "Question 1: C ou Python?",
+        JOptionPane.DEFAULT_OPTION,
+        JOptionPane.QUESTION_MESSAGE,
+        null,
+        null,
+        null);
+
+    // Récupérer les réponses de l'utilisateur
+    boolean isCSelected = cCheckbox.isSelected();
+    boolean isPythonSelected = pythonCheckbox.isSelected();
+
+    if (isCSelected) {
+      return new String[] {"./commande.sh"};
+    } else {
+      return new String[] {"./commande2.sh"};
+    }
   }
 
   public Collection<AnalysisResult> convertToolOutput() {
@@ -176,31 +178,50 @@ public class MopsaServerAnalysis implements ToolAnalysis {
       JsonObject jsonObject =
           gson.fromJson(new FileReader(new File(this.reportPath)), JsonObject.class);
 
+      JPanel panel2 = new JPanel();
+      JCheckBox singleFileCheckbox = new JCheckBox("Un fichier");
+      JCheckBox multipleFilesCheckbox = new JCheckBox("Plusieurs");
+      panel2.add(singleFileCheckbox);
+      panel2.add(multipleFilesCheckbox);
+      JOptionPane.showOptionDialog(
+          null,
+          panel2,
+          "Question 2: Un fichier ou plusieurs?",
+          JOptionPane.DEFAULT_OPTION,
+          JOptionPane.QUESTION_MESSAGE,
+          null,
+          null,
+          null);
+
+      boolean isSingleFileSelected = singleFileCheckbox.isSelected();
+      boolean isMultipleFilesSelected = multipleFilesCheckbox.isSelected();
       JsonArray checks = jsonObject.getAsJsonArray("checks");
       for (JsonElement checkElement : checks) {
         JsonObject check = checkElement.getAsJsonObject();
         String kind = check.get("kind").getAsString();
-        System.out.println("Kind: " + kind);
         String title = check.get("title").getAsString();
-        System.out.println("Title: " + title);
         String messages = check.get("messages").getAsString();
-        System.out.println("Messages: " + messages);
+
+        // Traiter les réponses ici...
 
         JsonObject range = check.getAsJsonObject("range");
         JsonObject start = range.getAsJsonObject("start");
         int line = start.get("line").getAsInt();
-        System.out.println("Line: " + line);
         String file = start.get("file").getAsString();
-        System.out.println("File: " + file);
+        if (file.contains("usr/")) {
+          continue;
+        }
+        Position pos;
+        if (isSingleFileSelected) {
 
-        Position pos =
-            SourceCodePositionFinder.findCode(
-                    new File(MopsaServerAnalysis.this.rootPath + "/" + file), line)
-                .toPosition();
+          pos =
+              SourceCodePositionFinder.findCode(
+                      new File(MopsaServerAnalysis.this.rootPath + "/" + file), line)
+                  .toPosition();
+        } else {
+          pos = SourceCodePositionFinder.findCode(new File(file), line).toPosition();
+        }
         String msg = title + ": " + messages;
-        System.out.println("Valeurs de callstacks :");
-
-        System.out.println("Valeurs de callstacks :" + check.getAsJsonArray("callstacks"));
         JsonArray callstacks = check.getAsJsonArray("callstacks");
         ArrayList<Pair<Position, String>> traceList = new ArrayList<Pair<Position, String>>();
         if (showTrace) {
@@ -233,22 +254,5 @@ public class MopsaServerAnalysis implements ToolAnalysis {
       System.out.println("Wow3 : " + e);
     }
     return res;
-  }
-
-  public static JsonObject parseJsonFile(String filePath) throws IOException {
-
-    // Création d'un objet Gson
-    Gson gson = new Gson();
-
-    // Ouverture du fichier JSON
-    BufferedReader br = new BufferedReader(new FileReader(filePath));
-
-    // Conversion du contenu du fichier JSON en objet JSON
-    JsonObject jsonObject = gson.fromJson(br, JsonObject.class);
-
-    // Fermeture du fichier JSON
-    br.close();
-
-    return jsonObject;
   }
 }
