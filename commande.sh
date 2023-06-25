@@ -1,3 +1,11 @@
 #!/bin/bash
 
-mopsa-c -format=json hello.c > analyse.json
+if [ -f "configure.sh" ] && [ -f "Makefile" ]; then
+
+    ./configure CC=clang
+
+
+    mopsa-build make
+else
+    mopsa-c *.c -format=json >analyse.json
+fi
