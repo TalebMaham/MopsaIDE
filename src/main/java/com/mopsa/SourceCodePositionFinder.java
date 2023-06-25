@@ -1,4 +1,3 @@
-
 package com.mopsa;
 
 import java.io.BufferedReader;
@@ -53,7 +52,7 @@ public class SourceCodePositionFinder {
     for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
       File file = iterator.next();
       String fileExtension = getFileExtension(file);
-      if ((fileExtension.equals(".c") || fileExtension.equals(".h"))
+      if ((fileExtension.equals(".c") || fileExtension.equals(".h") || fileExtension.equals(".py"))
           && file.getName().equals(fileName + fileExtension)) {
         return file;
       }
